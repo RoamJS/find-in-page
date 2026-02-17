@@ -1,5 +1,6 @@
 import runExtension from "roamjs-components/util/runExtension";
 import { render as renderToast } from "roamjs-components/components/Toast";
+import { createFindInPage } from "~/findInPage";
 
 export default runExtension(async ({ extensionAPI }) => {
   if (process.env.NODE_ENV === "development") {
@@ -31,9 +32,12 @@ export default runExtension(async ({ extensionAPI }) => {
   // keep index.ts simple, clean, easy to read and focused on the extension logic.
   // Use roamjs-components: dom/*, queries/*, writes/*, util/*, components/*
 
+  const findInPage = createFindInPage();
+
   return {
     unload: () => {
       // Clean up observers, listeners, command palette, etc.
+      findInPage.unload();
     },
   };
 });

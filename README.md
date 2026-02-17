@@ -48,3 +48,7 @@ Stock base for [RoamJS](https://roamjs.com) Roam Research extensions. **Fork thi
 ## License
 
 MIT
+
+# TODO: Convert this to React Blueprint icons and React the whole thing
+
+# TODO: Re-query the page and rebuild the index every time the Find In Page component opens; unfold and open folded blocks when navigating to a match
