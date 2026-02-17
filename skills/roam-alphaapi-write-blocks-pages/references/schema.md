@@ -1,0 +1,84 @@
+- parameter schema::
+    - `location`
+        - `parent-uid`
+            - Unique Identifier for block parent under which the block should be inserted.
+            - __string__
+        - `order`
+            - Index where the block should be inserted under the parent. 
+                - Starts at 0
+                - Use `'last'` to append
+            - __string__
+    - `block`
+        - `uid`
+            - Unique identifier for the block.
+            - __string__
+        - `string`
+            - Text content of the block.
+            - __string__
+        - `open`
+            - Collapse state of the block.
+            - __boolean__
+            - `true` by default (if not passed)
+        - `children-view-type`
+            - Block view type of children blocks
+            - __string__
+                - `bullet` 
+                - `numbered` 
+                - `document`
+        - `block-view-type`
+            - Block view type of the current block
+            - __string__
+                - `outline`
+                - `horizontal-outline`
+                - `popout`
+                - `tabs`
+                - `comment`
+                - `side`
+                - `vertical`
+        - `text-align`
+            - The block's alignment
+            - __string__
+                - `left` 
+                - `center` 
+                - `right`
+                - `justify`
+        - `heading`
+            - Heading styling of the block
+            - __integer__
+                - `0` (no heading styling)
+                - `1`
+                - `2`
+                - `3`
+    - `page`
+        - `uid`
+            - Unique identifier for the page.
+            - __string__
+        - `title`
+            - Title of the page.
+            - __string__
+        - `children-view-type`
+            - Block view type of children blocks
+            - __string__
+                - `bullet` 
+                - `numbered` 
+                - `document`
+    - `window`
+        - `collapsed?`
+        - `pinned?`
+        - `type`
+            - View type of window to open in the sidebar
+            - Can be one of:
+                - "mentions"
+                - "block"
+                - "outline"
+                - "graph"
+                - "search-query"
+            - __string__
+            - See [[Sample Output]] for `.getWindows` to see the types in action
+        - `block-uid`
+            - Unique identifier for block to open in the right sidebar
+            - Depending on the window type, this will be `block-uid`, `mentions-uid`, and `page-uid` in the returned window object. 
+            - __string__
+        - `order`
+            - Order of the window from $$0$$ to $$n$$
+            - __integer__
