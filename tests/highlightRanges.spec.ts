@@ -139,6 +139,119 @@ const installNativeHighlights = (dom: JSDOM): Map<string, Set<Range>> => {
 for (const native of [true, false]) {
   const mode = native ? "native ranges" : "fallback spans";
 
+  for (const { label, source, html } of [
+    {
+      label: "block reference",
+      source: "((target123))**target**",
+      html: '<span class="rm-block-ref">target</span><strong>target</strong>',
+    },
+    {
+      label: "block embed",
+      source: "{{[[embed]]: ((target123))}}**target**",
+      html: '<span class="rm-embed-container">target</span><strong>target</strong>',
+    },
+    {
+      label: "page embed",
+      source: "{{[[embed]]: [[target]]}}**target**",
+      html: '<span class="rm-embed-container">target</span><strong>target</strong>',
+    },
+    {
+      label: "nested query",
+      source: "{{[[query]]: {and: [[target]]}}}**target**",
+      html: '<span class="rm-query">target</span><strong>target</strong>',
+    },
+  ]) {
+    test(`${mode} map visible text past hidden ${label} source syntax`, () => {
+      withDocument((doc, dom) => {
+        const registry = native ? installNativeHighlights(dom) : null;
+        const input = doc.querySelector(".rm-block__input--view")!;
+        input.innerHTML = html;
+        const referenceMatches = rankEntries({
+          query: "target",
+          entries: [{ uid: "repeated", text: source, ancestors: [], order: 0 }],
+        });
+        expect(referenceMatches).toHaveLength(2);
+        for (const currentMatchIndex of [0, 1]) {
+          renderFindInPageHighlights({
+            matches: referenceMatches,
+            currentMatchIndex,
+            query: "target",
+          });
+          const active = registry
+            ? [...registry.get("roamjs-find-in-page-active-inline-match")!]
+            : [
+                ...input.querySelectorAll(
+                  ".roamjs-find-in-page-active-inline-match",
+                ),
+              ];
+          expect(active).toHaveLength(currentMatchIndex);
+          if (currentMatchIndex === 1) {
+            const parent =
+              active[0] instanceof dom.window.Range
+                ? active[0].startContainer.parentElement
+                : (active[0] as Element).parentElement;
+            expect(parent?.tagName).toBe("STRONG");
+          }
+        }
+        clearFindInPageHighlights();
+        expect(input.querySelector("strong")?.textContent).toBe("target");
+      });
+    });
+  }
+
+  for (const { label, source, html, tag } of [
+    {
+      label: "code",
+      source: "`((target123))`**target**",
+      html: "<code>((target123))</code><strong>target</strong>",
+      tag: "CODE",
+    },
+    {
+      label: "escaped reference",
+      source: "\\((target123))**target**",
+      html: "<span>((target123))</span><strong>target</strong>",
+      tag: "SPAN",
+    },
+  ]) {
+    test(`${mode} preserve literal reference syntax in ${label}`, () => {
+      withDocument((doc, dom) => {
+        const registry = native ? installNativeHighlights(dom) : null;
+        const input = doc.querySelector(".rm-block__input--view")!;
+        input.innerHTML = html;
+        renderFindInPageHighlights({
+          matches: rankEntries({
+            query: "target",
+            entries: [
+              { uid: "repeated", text: source, ancestors: [], order: 0 },
+            ],
+          }),
+          currentMatchIndex: 0,
+          query: "target",
+        });
+        if (registry) {
+          expect(registry.get("roamjs-find-in-page-inline-match")?.size).toBe(
+            2,
+          );
+          const active = [
+            ...registry.get("roamjs-find-in-page-active-inline-match")!,
+          ];
+          expect(active).toHaveLength(1);
+          expect(active[0].startContainer.parentElement?.tagName).toBe(tag);
+        } else {
+          const active = input.querySelectorAll(
+            ".roamjs-find-in-page-active-inline-match",
+          );
+          expect(active).toHaveLength(1);
+          expect(active[0].parentElement?.tagName).toBe(tag);
+          expect(
+            input.querySelectorAll(".roamjs-find-in-page-inline-match"),
+          ).toHaveLength(2);
+        }
+        clearFindInPageHighlights();
+      });
+    });
+  }
+
   test(`${mode} keep hidden link destinations from shifting later visible matches`, () => {
     withDocument((doc, dom) => {
       const registry = native ? installNativeHighlights(dom) : null;

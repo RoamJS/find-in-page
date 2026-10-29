@@ -348,10 +348,39 @@ const getRenderedMatches = ({
       ...match,
       sourceStart: match.start,
     }));
-  const linkDestinations: { start: number; end: number }[] = [];
+  const hiddenSourceRanges: { start: number; end: number }[] = [];
   for (let index = 0; index < sourceText.length - 1; index += 1) {
     if (sourceText[index] === "\\") {
       index += 1;
+      continue;
+    }
+    if (sourceText.startsWith("((", index)) {
+      const end = sourceText.indexOf("))", index + 2);
+      if (end >= 0 && /^[\w-]{9}$/.test(sourceText.slice(index + 2, end))) {
+        hiddenSourceRanges.push({ start: index, end: end + 2 });
+        index = end + 1;
+        continue;
+      }
+    }
+    if (
+      sourceText.startsWith("{{", index) &&
+      /^\{\{\s*(?:\[\[)?(?:embed|query)(?:\]\])?\s*:/i.test(
+        sourceText.slice(index),
+      )
+    ) {
+      let depth = 2;
+      for (let cursor = index + 2; cursor < sourceText.length; cursor += 1) {
+        if (sourceText[cursor] === "\\") {
+          cursor += 1;
+          continue;
+        }
+        if (sourceText[cursor] === "{") depth += 1;
+        if (sourceText[cursor] === "}") depth -= 1;
+        if (depth !== 0) continue;
+        hiddenSourceRanges.push({ start: index, end: cursor + 1 });
+        index = cursor;
+        break;
+      }
       continue;
     }
     if (sourceText[index] !== "]" || sourceText[index + 1] !== "(") continue;
@@ -364,7 +393,7 @@ const getRenderedMatches = ({
       if (sourceText[cursor] === "(") depth += 1;
       if (sourceText[cursor] === ")") depth -= 1;
       if (depth !== 0) continue;
-      linkDestinations.push({ start: index + 1, end: cursor + 1 });
+      hiddenSourceRanges.push({ start: index + 1, end: cursor + 1 });
       index = cursor;
       break;
     }
@@ -376,12 +405,12 @@ const getRenderedMatches = ({
     let sourceStart = sourceText.indexOf(node.data, sourceCursor);
     if (!node.parentElement?.closest("code, pre")) {
       while (sourceStart >= 0) {
-        const hiddenDestination = linkDestinations.find(
+        const hiddenRange = hiddenSourceRanges.find(
           ({ start, end }) =>
             sourceStart < end && sourceStart + node.length > start,
         );
-        if (!hiddenDestination) break;
-        sourceStart = sourceText.indexOf(node.data, hiddenDestination.end);
+        if (!hiddenRange) break;
+        sourceStart = sourceText.indexOf(node.data, hiddenRange.end);
       }
     }
     const start = renderedCursor;
