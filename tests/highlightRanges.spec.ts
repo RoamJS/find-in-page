@@ -414,3 +414,47 @@ for (const native of [true, false]) {
     });
   });
 }
+
+for (const copiedClass of [
+  "rm-embed-container",
+  "rm-block-ref",
+  "rm-query",
+  "rm-reference-container",
+  "rm-reference-main",
+  "rm-mentions",
+  "rm-reference-item",
+]) {
+  test(`outline highlighting ignores an earlier ${copiedClass} copy of the same UID`, () => {
+    withDocument((doc) => {
+      doc.querySelector(".roam-body-main")!.innerHTML = `
+        <div class="${copiedClass}"><div id="copy" class="roam-block-container" data-block-uid="source"><div class="rm-block__input--view">target</div></div></div>
+        <div id="outline" class="roam-block-container" data-block-uid="source"><div class="rm-block__input--view">target</div></div>`;
+      renderFindInPageHighlights({
+        matches: rankEntries({
+          query: "target",
+          entries: [{ uid: "source", text: "target", ancestors: [], order: 0 }],
+        }),
+        currentMatchIndex: 0,
+        query: "target",
+      });
+      expect(
+        doc
+          .querySelector("#copy")!
+          .classList.contains("roamjs-find-in-page-match"),
+      ).toBe(false);
+      expect(
+        doc.querySelector("#copy .roamjs-find-in-page-inline-match"),
+      ).toBeNull();
+      expect(
+        doc
+          .querySelector("#outline")!
+          .classList.contains("roamjs-find-in-page-active-match"),
+      ).toBe(true);
+      expect(
+        doc.querySelector("#outline .roamjs-find-in-page-active-inline-match")
+          ?.textContent,
+      ).toBe("target");
+      clearFindInPageHighlights();
+    });
+  });
+}

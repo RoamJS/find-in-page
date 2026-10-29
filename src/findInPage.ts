@@ -29,6 +29,8 @@ const ACTIVE_MATCH_CLASS = "roamjs-find-in-page-active-match";
 const INLINE_MATCH_CLASS = "roamjs-find-in-page-inline-match";
 const ACTIVE_INLINE_MATCH_CLASS = "roamjs-find-in-page-active-inline-match";
 const FLASH_MATCH_CLASS = "roamjs-find-in-page-flash-match";
+const COPIED_CONTENT_SELECTOR =
+  ".rm-embed-container, .rm-block-ref, .rm-query, .rm-reference-container, .rm-reference-main, .rm-mentions, .rm-reference-item";
 const PULL_PATTERN =
   "[:block/uid :block/string :block/order {:block/children ...}]";
 const MAX_HIGHLIGHTED_BLOCKS = 250;
@@ -236,7 +238,9 @@ const getDefaultBlockElement = (uid: string): HTMLElement | null => {
     `div[id$="-${escapedUid}"]`,
   ];
   for (const selector of selectors) {
-    const found = main.querySelector<HTMLElement>(selector);
+    const found = Array.from(main.querySelectorAll<HTMLElement>(selector)).find(
+      (candidate) => !candidate.closest(COPIED_CONTENT_SELECTOR),
+    );
     if (found) {
       return (
         found.closest<HTMLElement>(".roam-block-container") ??
@@ -314,7 +318,7 @@ const getBlockTextNodes = (blockElement: HTMLElement): Text[] => {
       const parent = node.parentElement;
       return parent &&
         parent.closest(".roam-block-container") === owner &&
-        !parent.closest(".rm-block-ref, .rm-embed-container, .rm-query")
+        !parent.closest(COPIED_CONTENT_SELECTOR)
         ? NodeFilter.FILTER_ACCEPT
         : NodeFilter.FILTER_REJECT;
     },

@@ -1774,3 +1774,66 @@ test("React panel exposes accessible controls and keyboard actions", () => {
     "close",
   ]);
 });
+
+test("navigation waits for the actual folded outline block instead of an existing reference copy", async () => {
+  const dom = new JSDOM(
+    '<div class="roam-body-main"><div class="rm-reference-main"><div id="copy" class="roam-block-container" data-block-uid="match"><div class="rm-block__input--view">target</div></div></div></div>',
+  );
+  const previous = { document: global.document, window: global.window };
+  Object.assign(global, { document: dom.window.document, window: dom.window });
+  try {
+    const panel = createPanelHost();
+    const fakeApi = createApi({
+      pull: () => ({
+        ":block/uid": "root",
+        ":block/children": [
+          {
+            ":block/uid": "parent",
+            ":block/string": "Folded",
+            ":block/children": [
+              { ":block/uid": "match", ":block/string": "target" },
+            ],
+          },
+        ],
+      }),
+    });
+    let renderWaits = 0;
+    const scrolled: HTMLElement[] = [];
+    const controller = await createFindInPage({
+      ...makeControllerDependencies({
+        api: fakeApi.api,
+        panelHost: panel.host,
+      }),
+      getBlockElement: undefined,
+      scrollToBlock: (element): void => {
+        scrolled.push(element);
+      },
+      delay: async (milliseconds): Promise<void> => {
+        if (!milliseconds) return;
+        renderWaits += 1;
+        const outline = dom.window.document.createElement("div");
+        outline.id = "actual-outline";
+        outline.className = "roam-block-container";
+        outline.setAttribute("data-block-uid", "match");
+        const input = dom.window.document.createElement("div");
+        input.className = "rm-block__input--view";
+        input.textContent = "target";
+        outline.appendChild(input);
+        dom.window.document
+          .querySelector(".roam-body-main")!
+          .appendChild(outline);
+      },
+    });
+    await controller.open();
+    panel.getActions().onQueryChange("target");
+    panel.getActions().onNext();
+    await flushPromises();
+    expect(renderWaits).toBe(1);
+    expect(fakeApi.openedBlocks).toEqual(["parent"]);
+    expect(scrolled.map((element) => element.id)).toEqual(["actual-outline"]);
+    controller.unload();
+  } finally {
+    Object.assign(global, previous);
+    dom.window.close();
+  }
+});
