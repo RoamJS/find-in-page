@@ -1,27 +1,28 @@
-name: Publish Extension
+name: Validate Extension (main)
 on:
   workflow_dispatch:
   push:
     branches: main
-    paths:
-      - "src/**"
-      - "README.md"
-      - "package.json"
-      - ".github/workflows/main.yaml"
 
-env:
-  GITHUB_TOKEN: ${{ secrets.ROAMJS_RELEASE_TOKEN }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-  AWS_REGION: ${{ vars.AWS_REGION }}
-  ROAMJS_PROXY: ${{ vars.ROAMJS_PROXY }}
+permissions:
+  contents: read
 
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: install
-        run: npm install
-      - name: build
-        run: npx samepage build
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test -- --reporter=line
+      - name: Check TypeScript
+        run: npm run typecheck
+      - name: Build without publishing
+        # --dry skips GitHub releases, uploads, and the inherited Depot PR hook.
+        run: npx --no-install samepage build --dry

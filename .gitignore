@@ -5,3 +5,7 @@ out
 .env
 extension.js
 extension.js.LICENSE.txt
+extension.js.map
+coverage/
+local/
+.DS_Store
