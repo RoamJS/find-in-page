@@ -7,10 +7,33 @@ export type BlockSearchEntry = {
 
 export type RankedBlockSearchEntry = BlockSearchEntry & {
   score: number;
+  start: number;
+  end: number;
+  occurrenceIndex: number;
 };
 
-const normalize = ({ value }: { value: string }): string =>
-  value.trim().toLowerCase();
+export type MatchRange = {
+  start: number;
+  end: number;
+};
+
+export const getMatchRanges = ({
+  query,
+  text,
+}: {
+  query: string;
+  text: string;
+}): MatchRange[] => {
+  const trimmedQuery = query.trim();
+  if (!trimmedQuery) return [];
+
+  const literalQuery = trimmedQuery.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(literalQuery, "giu");
+  return Array.from(text.matchAll(pattern), (match) => ({
+    start: match.index,
+    end: match.index + match[0].length,
+  }));
+};
 
 export const getMatchScore = ({
   query,
@@ -19,14 +42,7 @@ export const getMatchScore = ({
   query: string;
   text: string;
 }): number | null => {
-  const normalizedQuery = normalize({ value: query });
-  if (!normalizedQuery) {
-    return null;
-  }
-
-  const normalizedText = text.toLowerCase();
-  const substringIndex = normalizedText.indexOf(normalizedQuery);
-  return substringIndex >= 0 ? substringIndex : null;
+  return getMatchRanges({ query, text })[0]?.start ?? null;
 };
 
 export const rankEntries = ({
@@ -38,10 +54,10 @@ export const rankEntries = ({
 }): RankedBlockSearchEntry[] =>
   entries
     .reduce<RankedBlockSearchEntry[]>((acc, entry) => {
-      const score = getMatchScore({ query, text: entry.text });
-      if (score !== null) {
-        acc.push({ ...entry, score });
-      }
+      getMatchRanges({ query, text: entry.text }).forEach(
+        ({ start, end }, occurrenceIndex) =>
+          acc.push({ ...entry, score: start, start, end, occurrenceIndex }),
+      );
       return acc;
     }, [])
-    .sort((a, b) => a.score - b.score || a.order - b.order);
+    .sort((a, b) => a.order - b.order);

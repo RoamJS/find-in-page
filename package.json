@@ -1,16 +1,21 @@
 {
-  "name": "extension-base",
+  "name": "find-in-page",
   "version": "1.0.0",
-  "description": "Stock RoamJS Roam Research Extension base — fork this repo to start new extensions.",
+  "description": "Find text across the current page, including folded blocks. Preview highlighted matches, jump into editing, and navigate with keyboard shortcuts.",
   "main": "index.js",
   "scripts": {
     "postinstall": "patch-package",
     "start": "samepage dev",
     "prebuild:roam": "npm install",
     "build:roam": "samepage build --dry",
-    "test": "samepage test"
+    "test": "samepage test",
+    "typecheck": "tsc --noEmit"
   },
-  "keywords": ["roam", "roam-research", "roamjs"],
+  "keywords": [
+    "roam",
+    "roam-research",
+    "roamjs"
+  ],
   "license": "MIT",
   "dependencies": {
     "roamjs-components": "^0.86.4"

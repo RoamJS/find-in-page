@@ -1,54 +1,68 @@
-# RoamJS Extension Base
+# Find In Page
 
-Stock base for [RoamJS](https://roamjs.com) Roam Research extensions. **Fork this repo** to start a new extension.
+<a href="https://roamjs.com/">
+    <img src="https://avatars.githubusercontent.com/u/138642184" alt="RoamJS Logo" title="RoamJS" align="right" height="60" />
+</a>
 
-## What's included
+**Find text across the current page, including folded blocks. Preview highlighted matches, jump into editing, and navigate with keyboard shortcuts.**
 
-- **roamjs-components** — shared utilities, DOM helpers, queries, writes, and UI components
-- **Samepage build** — `samepage build` produces the Roam Depot–ready bundle
-- **Settings panel** — example `extensionAPI.settings.panel.create` with an Enable switch
-- **TypeScript** — tsconfig extending `@samepage/scripts`
-- **CI** — GitHub Actions to build on push/PR (uses RoamJS secrets for publish)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoamJS/find-in-page)
 
-## After forking
+## Features
 
-1. **Rename the repo** and update `package.json`:
-   - `name`: your extension slug (e.g. `my-extension`)
-   - `description`: one line describing the extension
+- Search the current page or zoomed-in block and its descendants, including folded blocks.
+- Find text and phrases without worrying about capitalization.
+- Highlight matching text and see how many occurrences there are.
+- Preview each match while keeping your cursor in the search field, then select that text in its block when you want to edit.
+- Reveal folded ancestors automatically when navigating to a match.
+- Assign global shortcuts to four commands through **Settings → Hotkeys**.
 
-2. **Implement in `src/index.ts`**:
-   - Keep or replace the settings panel
-   - Add your logic using `roamjs-components` (e.g. `createHTMLObserver`, `createBlock`, `renderToast`)
-   - Return `{ unload }` to clean up on unload
+## Usage
 
-3. **Update all instances of `{Extension Name}` to the name of the extension.**
+1. Open a page or zoom into a block in the main window.
+2. Press **Cmd+F** on macOS or **Ctrl+F** on Windows/Linux, or run **Find In Page: Open** from the command palette.
+3. Type a word or phrase. Individual matches are counted and visible matches are highlighted.
+4. Press **Enter** to preview a match. Continue with **Enter** or **Shift+Enter** to move forward or backward.
+5. Press **Cmd/Ctrl+Enter** to focus the selected match for editing. That occurrence is selected in its block, and the search panel stays open.
 
-### Rules for Agents updating this README.md
+If the default shortcut is already assigned, choose a shortcut for **Find In Page: Open** in **Settings → Hotkeys**.
 
-- refer to README-TEMPLATE.md for the structure of the README.md
-- This is a marketing document. It is user facing, not developer facing.
-- Do not include reference to Roam Research (eg: This is a Roam Research extension), that is implied.
-- Do not include build instructions (eg: `npm run build:roam`).
-- update `# RoamJS Extension Base` to the name of the extension.
-- update askdeepwiki badge to the name of the extension.
-- update the description to be a < 250 character description of the extension. This should be enticing to new users to install the extension.
-- add a `## Features` section to the README.md with a list of the features of the extension.
+### Search field shortcuts
 
-3. **Prefer**: Add React components under `src/components/` (see [autocomplete](https://github.com/RoamJS/autocomplete), [giphy](https://github.com/RoamJS/giphy) for examples).
+These shortcuts apply while the search field has focus.
 
-4. **Secrets (for publish)** — in the forked repo, configure:
-   - `ROAMJS_RELEASE_TOKEN`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`
-   - `AWS_REGION`, `ROAMJS_PROXY` (vars)
+| Shortcut                | Action                               |
+| ----------------------- | ------------------------------------ |
+| Enter or Down arrow     | Preview the next match               |
+| Shift+Enter or Up arrow | Preview the previous match           |
+| Cmd/Ctrl+Enter          | Focus the selected match for editing |
+| Escape                  | Close the panel and clear highlights |
 
-## Scripts
+The panel also has buttons for previous, next, focus, and close. Escape closes the panel when either the search field or a panel button has focus. Navigation visits each occurrence within a block before continuing to the next block, follows page order, and wraps around at either end of the results.
 
-- `npm start` — samepage dev (local development)
-- `npm run build:roam` — build for Roam (dry run; CI runs `npx samepage build`)
+Before selecting a result, the counter shows the number of matches. After navigation it shows your position, such as **1 of 2**. An empty search shows **Type to search**, and a search with no results shows **No matches**.
+
+### Global commands
+
+Assign shortcuts in **Settings → Hotkeys** to use these commands while editing a block:
+
+- **Find In Page: Open** — open or refocus the search panel and refresh its results, keeping the selected occurrence on the same page when it is still available.
+- **Find In Page: Next Match** — preview the next occurrence and keep the search field focused.
+- **Find In Page: Previous Match** — preview the previous occurrence and keep the search field focused.
+- **Find In Page: Focus Current Match** — focus the selected occurrence, or the first result if none is selected.
+
+The navigation commands use the current search while its panel is open. Ordinary Enter in the outliner keeps its usual editing behavior.
+
+## Search scope
+
+- Search covers the current main-window page or block tree. It does not search the whole graph, the right sidebar, linked references, or text resolved from block references and embeds.
+- Matches are contiguous text, ignoring capitalization and surrounding spaces in the query. Regular expressions and fuzzy matching are not supported.
+- The counter and navigation operate on individual, non-overlapping occurrences. Repeated matches within one block are separate results.
+- Search uses saved block text. Matches in hidden markup, such as link destinations, can be selected with **Cmd/Ctrl+Enter** even when they have no visible inline highlight.
+- Results are refreshed whenever you run **Find In Page: Open**. After editing text or moving to another page, run it again to search the current content.
+- Folded ancestors opened during navigation remain expanded when the panel closes.
+- On large result sets, inline highlighting covers the first 250 matching blocks plus the block containing the selected result. Navigation still includes every match.
 
 ## License
 
 MIT
-
-# TODO: Convert this to React Blueprint icons and React the whole thing
-
-# TODO: Re-query the page and rebuild the index every time the Find In Page component opens; unfold and open folded blocks when navigating to a match
