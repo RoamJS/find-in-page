@@ -1096,13 +1096,29 @@ export const createFindInPage = async (
       refreshSearch({
         selectedMatch: rootUid === previousRootUid ? selectedMatch : undefined,
       });
-      panelHost.focusInput({ select: true });
       stopObservingContent();
       stopObservingContent = (
         dependencies.observeContentChanges ?? observeDefaultContentChanges
       )(() => {
         if (isOpen && !isUnloaded) refreshHighlights();
       });
+      const retainedMatch = matches[currentMatchIndex];
+      const retainedBlock = retainedMatch && getBlockElement(retainedMatch.uid);
+      const editor = retainedBlock && getBlockEditor(retainedBlock);
+      const KeyboardEvent = editor?.ownerDocument.defaultView?.KeyboardEvent;
+      if (editor && KeyboardEvent) {
+        // Roam retains its editor after blur; Escape restores rendered text.
+        editor.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Escape",
+            code: "Escape",
+            keyCode: 27,
+            which: 27,
+            bubbles: true,
+          }),
+        );
+      }
+      panelHost.focusInput({ select: true });
       await afterHostRender();
       if (signal.aborted) return;
       refreshHighlights();

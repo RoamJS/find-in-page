@@ -291,6 +291,7 @@ for (const outcome of ["render", "close", "unload", "query"] as const) {
     ) as HTMLElement;
     const resumeHostRender = createDeferred();
     let reopening = false;
+    let exitedEditor = false;
     const painted: { view: Element | null; index: number }[] = [];
     const fakeApi = createApi({
       pull: () => ({
@@ -302,6 +303,11 @@ for (const outcome of ["render", "close", "unload", "query"] as const) {
     });
     fakeApi.api.ui.setBlockFocusAndSelection = (): void => {
       element.innerHTML = "<textarea>Target then target</textarea>";
+      element
+        .querySelector("textarea")
+        ?.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") exitedEditor = true;
+        });
     };
     const controller = await createFindInPage({
       ...makeControllerDependencies({
@@ -319,8 +325,9 @@ for (const outcome of ["render", "close", "unload", "query"] as const) {
       afterHostRender: async (): Promise<void> => {
         if (!reopening) return;
         await resumeHostRender.promise;
-        element.innerHTML =
-          '<div class="rm-block__input--view">Target then target</div>';
+        if (exitedEditor)
+          element.innerHTML =
+            '<div class="rm-block__input--view">Target then target</div>';
       },
     });
     await controller.open();
@@ -346,6 +353,7 @@ for (const outcome of ["render", "close", "unload", "query"] as const) {
         : [],
     );
     if (outcome === "render") {
+      expect(exitedEditor).toBe(true);
       expect(painted[0].view).not.toBeNull();
       expect(controller.getState().currentMatchIndex).toBe(1);
       expect(panel.focusCalls.at(-1)).toEqual({ select: true });
