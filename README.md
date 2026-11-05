@@ -29,7 +29,6 @@ https://github.com/user-attachments/assets/b34d12c6-c8b0-452e-b62e-973ce693fee4
 
 The panel also has buttons for previous, next, focus and close. Navigation wraps around at either end of the results.
 
-
 ## Keyboard shortcuts
 
 These shortcuts apply while the search field has focus:
