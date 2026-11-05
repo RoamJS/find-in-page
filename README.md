@@ -76,17 +76,6 @@ The navigation commands use the current search while its panel is open. If **Cmd
 
 An empty query shows **Type to search**. A query with no results shows **No matches**. If search reports that no page is open, open an individual page or zoom into a block rather than using the Daily Notes feed.
 
-## Development
-
-```sh
-npm ci
-npm test -- --reporter=line
-npm run typecheck
-npm run build:roam --ignore-scripts
-```
-
-The build writes `extension.js` in the repository root. Load that folder in Roam Depot developer mode for local testing. The dry build and GitHub Actions validate the extension without creating a release or a Roam Depot pull request.
-
 ## License
 
 MIT
