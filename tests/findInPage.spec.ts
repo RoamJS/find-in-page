@@ -279,6 +279,81 @@ test("opening always rebuilds the index and reflects edits and deletes", async (
   expect(controller.getState().matches.map(({ uid }) => uid)).toEqual(["two"]);
 });
 
+for (const outcome of ["render", "close", "unload", "query"] as const) {
+  test(`Open repaints the retained occurrence after the editor blurs: ${outcome}`, async () => {
+    const panel = createPanelHost();
+    const extension = createExtensionApi();
+    const dom = new JSDOM(
+      '<div class="roam-block-container"><div class="rm-block__input--view">Target then target</div></div>',
+    );
+    const element = dom.window.document.querySelector(
+      ".roam-block-container",
+    ) as HTMLElement;
+    const resumeHostRender = createDeferred();
+    let reopening = false;
+    const painted: { view: Element | null; index: number }[] = [];
+    const fakeApi = createApi({
+      pull: () => ({
+        ":block/uid": "root",
+        ":block/children": [
+          { ":block/uid": "repeated", ":block/string": "Target then target" },
+        ],
+      }),
+    });
+    fakeApi.api.ui.setBlockFocusAndSelection = (): void => {
+      element.innerHTML = "<textarea>Target then target</textarea>";
+    };
+    const controller = await createFindInPage({
+      ...makeControllerDependencies({
+        api: fakeApi.api,
+        extensionAPI: extension.api,
+        panelHost: panel.host,
+        getBlockElement: () => element,
+      }),
+      renderHighlights: ({ currentMatchIndex }): void => {
+        painted.push({
+          view: element.querySelector(".rm-block__input--view"),
+          index: currentMatchIndex,
+        });
+      },
+      afterHostRender: async (): Promise<void> => {
+        if (!reopening) return;
+        await resumeHostRender.promise;
+        element.innerHTML =
+          '<div class="rm-block__input--view">Target then target</div>';
+      },
+    });
+    await controller.open();
+    panel.getActions().onQueryChange("target");
+    panel.getActions().onPrevious();
+    await flushPromises();
+    panel.getActions().onFocusCurrent();
+    await flushPromises();
+    expect(element.querySelector("textarea")).not.toBeNull();
+    reopening = true;
+    const opening = controller.open();
+    // Let the simulated Roam blur finish even if Open never waits for it.
+    await flushPromises();
+    if (outcome === "close") panel.getActions().onClose();
+    if (outcome === "unload") controller.unload();
+    if (outcome === "query") panel.getActions().onQueryChange("then");
+    painted.length = 0;
+    resumeHostRender.resolve();
+    await opening;
+    expect(painted).toEqual(
+      outcome === "render"
+        ? [{ view: element.querySelector(".rm-block__input--view"), index: 1 }]
+        : [],
+    );
+    if (outcome === "render") {
+      expect(painted[0].view).not.toBeNull();
+      expect(controller.getState().currentMatchIndex).toBe(1);
+      expect(panel.focusCalls.at(-1)).toEqual({ select: true });
+    }
+    controller.unload();
+  });
+}
+
 for (const occurrenceIndex of [0, 1]) {
   test(`Open preserves occurrence ${occurrenceIndex + 1} after focusing it for editing`, async () => {
     const panel = createPanelHost();
@@ -1238,6 +1313,7 @@ for (const outcome of ["render", "close"] as const) {
         scrolled.push(block);
       },
       afterHostRender: async (): Promise<void> => {
+        if (!previewStarted) return;
         hostRenderStarted.resolve();
         await resumeHostRender.promise;
         if (hostRenderPending) {

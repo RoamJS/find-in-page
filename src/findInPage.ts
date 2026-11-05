@@ -1103,6 +1103,9 @@ export const createFindInPage = async (
       )(() => {
         if (isOpen && !isUnloaded) refreshHighlights();
       });
+      await afterHostRender();
+      if (signal.aborted) return;
+      refreshHighlights();
     } catch {
       if (signal.aborted) return;
       indexedBlocks = [];

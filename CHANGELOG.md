@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Restore the selected occurrence’s highlight after returning from editing through Find In Page: Open.
+
 ## 1.0.0
 
 - Search the current page or zoomed-in block, including folded descendants.
