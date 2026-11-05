@@ -6,62 +6,86 @@
 
 **Find text across the current page, including folded blocks. Preview highlighted matches, jump into editing, and navigate with keyboard shortcuts.**
 
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoamJS/find-in-page)
+[![RoamJS](https://roamjs.com/badges/website.svg)](https://roamjs.com/) [![DeepWiki](https://roamjs.com/badges/deepwiki.svg)](https://deepwiki.com/RoamJS/find-in-page) [![Slack](https://roamjs.com/badges/slack.svg)](https://roamresearch.slack.com/archives/C016N2B66JU)
+
+https://github.com/user-attachments/assets/b34d12c6-c8b0-452e-b62e-973ce693fee4
 
 ## Features
 
-- Search the current page or zoomed-in block and its descendants, including folded blocks.
-- Find text and phrases without worrying about capitalization.
-- Highlight matching text and see how many occurrences there are.
-- Preview each match while keeping your cursor in the search field, then select that text in its block when you want to edit.
-- Reveal folded ancestors automatically when navigating to a match.
-- Assign global shortcuts to four commands through **Settings → Hotkeys**.
+- Search a page or zoomed-in block and its descendants, including folded blocks.
+- Find words and phrases regardless of capitalization, with highlights that preserve the text layout.
+- Visit every occurrence in page order, including repeated matches within the same block.
+- Reveal folded ancestors as you navigate, then select the exact phrase when you want to edit.
+- Reopen search after editing and keep your selected occurrence when it is still available.
+- Assign global shortcuts to open search, move between matches, and focus the current match.
 
-## Usage
+## Getting started
 
-1. Open a page or zoom into a block in the main window.
+1. Open a page or zoom into a block in Roam’s main window.
 2. Press **Cmd+F** on macOS or **Ctrl+F** on Windows/Linux, or run **Find In Page: Open** from the command palette.
-3. Type a word or phrase. Individual matches are counted and visible matches are highlighted.
-4. Press **Enter** to preview a match. Continue with **Enter** or **Shift+Enter** to move forward or backward.
-5. Press **Cmd/Ctrl+Enter** to focus the selected match for editing. That occurrence is selected in its block, and the search panel stays open.
+3. Type a word or phrase. Matches are highlighted and counted as you type.
+4. Press **Enter** to preview a match. Use **Enter** or **Down arrow** to move forward, and **Shift+Enter** or **Up arrow** to move backward.
+5. Press **Cmd/Ctrl+Enter** to select the current occurrence in its block for editing. The search panel stays open. Run **Find In Page: Open** again to return to search and refresh the results.
 
-If the default shortcut is already assigned, choose a shortcut for **Find In Page: Open** in **Settings → Hotkeys**.
+The panel also has buttons for previous, next, focus and close. Navigation wraps around at either end of the results.
 
-### Search field shortcuts
+<details>
+<summary>Watch the full walkthrough — 39 seconds, with narration</summary>
 
-These shortcuts apply while the search field has focus.
+Search for a phrase, navigate repeated matches and folded notes, then return to search after selecting text for editing.
 
-| Shortcut                | Action                               |
-| ----------------------- | ------------------------------------ |
-| Enter or Down arrow     | Preview the next match               |
-| Shift+Enter or Up arrow | Preview the previous match           |
-| Cmd/Ctrl+Enter          | Focus the selected match for editing |
-| Escape                  | Close the panel and clear highlights |
+https://github.com/user-attachments/assets/d13563d4-4aa4-4429-ba69-49717df4a167
 
-The panel also has buttons for previous, next, focus, and close. Escape closes the panel when either the search field or a panel button has focus. Navigation visits each occurrence within a block before continuing to the next block, follows page order, and wraps around at either end of the results.
+</details>
 
-Before selecting a result, the counter shows the number of matches. After navigation it shows your position, such as **1 of 2**. An empty search shows **Type to search**, and a search with no results shows **No matches**.
+## Keyboard shortcuts
+
+These shortcuts apply while the search field has focus:
+
+| Shortcut                | Action                                    |
+| ----------------------- | ----------------------------------------- |
+| Enter or Down arrow     | Preview the next occurrence               |
+| Shift+Enter or Up arrow | Preview the previous occurrence           |
+| Cmd/Ctrl+Enter          | Select the current occurrence for editing |
+| Escape                  | Close the panel and clear highlights      |
+
+Escape also closes the panel when one of its buttons has focus. Enter in the outliner keeps Roam’s usual editing behavior.
 
 ### Global commands
 
 Assign shortcuts in **Settings → Hotkeys** to use these commands while editing a block:
 
-- **Find In Page: Open** — open or refocus the search panel and refresh its results, keeping the selected occurrence on the same page when it is still available.
-- **Find In Page: Next Match** — preview the next occurrence and keep the search field focused.
-- **Find In Page: Previous Match** — preview the previous occurrence and keep the search field focused.
-- **Find In Page: Focus Current Match** — focus the selected occurrence, or the first result if none is selected.
+| Command                               | Action                                                                                                         |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| **Find In Page: Open**                | Open or refocus search and refresh its results; retain the selected occurrence on the same page when available |
+| **Find In Page: Next Match**          | Preview the next occurrence and focus the search field                                                         |
+| **Find In Page: Previous Match**      | Preview the previous occurrence and focus the search field                                                     |
+| **Find In Page: Focus Current Match** | Select the current occurrence in its block, or the first result if none is selected                            |
 
-The navigation commands use the current search while its panel is open. Ordinary Enter in the outliner keeps its usual editing behavior.
+The navigation commands use the current search while its panel is open. If **Cmd/Ctrl+F** is already assigned, choose another shortcut for **Find In Page: Open** in **Settings → Hotkeys**.
 
 ## Search scope
 
 - Search covers the current main-window page or block tree. It does not search the whole graph, the right sidebar, linked references, or text resolved from block references and embeds.
-- Matches are contiguous text, ignoring capitalization and surrounding spaces in the query. Regular expressions and fuzzy matching are not supported.
-- The counter and navigation operate on individual, non-overlapping occurrences. Repeated matches within one block are separate results.
-- Search uses saved block text. Matches in hidden markup, such as link destinations, can be selected with **Cmd/Ctrl+Enter** even when they have no visible inline highlight.
-- Results are refreshed whenever you run **Find In Page: Open**. After editing text or moving to another page, run it again to search the current content.
-- Folded ancestors opened during navigation remain expanded when the panel closes.
-- On large result sets, inline highlighting covers the first 250 matching blocks plus the block containing the selected result. Navigation still includes every match.
+- Queries match contiguous text, ignoring capitalization and surrounding spaces. Regular expressions and fuzzy matching are not supported.
+- The counter and navigation track individual, non-overlapping occurrences. Before navigating, the counter shows the total; afterward, it shows a position such as **3 of 4**.
+- Search uses saved block text. Matches in hidden markup, such as link destinations, can be selected for editing even when they have no visible inline highlight.
+- After changing block text or navigating to another page, run **Find In Page: Open** to refresh the search.
+- Folded ancestors opened during navigation remain expanded when you close the panel.
+- On large result sets, inline highlighting covers the first 250 matching blocks plus the selected block. Every occurrence remains navigable.
+
+An empty query shows **Type to search**. A query with no results shows **No matches**. If search reports that no page is open, open an individual page or zoom into a block rather than using the Daily Notes feed.
+
+## Development
+
+```sh
+npm ci
+npm test -- --reporter=line
+npm run typecheck
+npm run build:roam --ignore-scripts
+```
+
+The build writes `extension.js` in the repository root. Load that folder in Roam Depot developer mode for local testing. The dry build and GitHub Actions validate the extension without creating a release or a Roam Depot pull request.
 
 ## License
 

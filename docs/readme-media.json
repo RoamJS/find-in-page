@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "approval": {
+    "by": "Michael Gartner",
+    "source": "Find In Page release chat: this videos are approved",
+    "date": "2026-11-04"
+  },
+  "promo": {
+    "url": "https://github.com/user-attachments/assets/b34d12c6-c8b0-452e-b62e-973ce693fee4",
+    "masterSha256": "66d55c0c9ccd69800489f8b286613c4d7519b25a375b663c4af2886c6004bc58",
+    "deliverySha256": "05b4aaa26707fd6adee7416ce4a8b4b0263cfd6103fd694a902fbb6fa94c5992",
+    "deliveryNote": "1080p30 web encoding of the approved master to meet GitHub\u2019s10MB attachment limit; audio copied without re-encoding; full-duration visual SSIM0.997377.",
+    "durationSeconds": 30
+  },
+  "productDemo": {
+    "url": "https://github.com/user-attachments/assets/d13563d4-4aa4-4429-ba69-49717df4a167",
+    "sha256": "6251f687481024f6ced9aa0d5578a8a8d09bbca7029cfd56685559e43054dd0b",
+    "durationSeconds": 39,
+    "audio": "Approved River narration"
+  }
+}
