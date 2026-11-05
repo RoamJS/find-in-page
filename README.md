@@ -29,14 +29,6 @@ https://github.com/user-attachments/assets/b34d12c6-c8b0-452e-b62e-973ce693fee4
 
 The panel also has buttons for previous, next, focus and close. Navigation wraps around at either end of the results.
 
-<details>
-<summary>Watch the full walkthrough — 39 seconds, with narration</summary>
-
-Search for a phrase, navigate repeated matches and folded notes, then return to search after selecting text for editing.
-
-https://github.com/user-attachments/assets/d13563d4-4aa4-4429-ba69-49717df4a167
-
-</details>
 
 ## Keyboard shortcuts
 
@@ -75,6 +67,17 @@ The navigation commands use the current search while its panel is open. If **Cmd
 - On large result sets, inline highlighting covers the first 250 matching blocks plus the selected block. Every occurrence remains navigable.
 
 An empty query shows **Type to search**. A query with no results shows **No matches**. If search reports that no page is open, open an individual page or zoom into a block rather than using the Daily Notes feed.
+
+## Demo
+
+<details>
+<summary>Watch the walkthrough</summary>
+
+Search for a phrase, navigate repeated matches and folded notes, then return to search after selecting text for editing.
+
+https://github.com/user-attachments/assets/d13563d4-4aa4-4429-ba69-49717df4a167
+
+</details>
 
 ## License
 
