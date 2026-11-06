@@ -16,7 +16,6 @@ import {
   applyInlineHighlightsToBlock,
   createFindInPage,
   flattenTreeToEntries,
-  revealAncestorBlocks,
   waitForBlockElement,
   type PanelHost,
 } from "../src/findInPage";
@@ -90,12 +89,24 @@ const createApi = ({
 }): {
   api: Window["roamAlphaAPI"];
   openedBlocks: string[];
+  closedBlocks: string[];
   focusedBlocks: string[];
   pullCalls: number[];
 } => {
   const openedBlocks: string[] = [];
+  const closedBlocks: string[] = [];
   const focusedBlocks: string[] = [];
   const pullCalls: number[] = [];
+  const foldStates = new Map<string, boolean>();
+  const findNode = (node: PullBlock | null, uid: string): PullBlock | null => {
+    if (!node) return null;
+    if (node[":block/uid"] === uid) return node;
+    for (const child of node[":block/children"] ?? []) {
+      const found = findNode(child, uid);
+      if (found) return found;
+    }
+    return null;
+  };
   return {
     api: {
       ui: {
@@ -105,16 +116,27 @@ const createApi = ({
         },
       },
       data: {
-        pull: () => {
+        pull: (pattern, id) => {
           pullCalls.push(1);
-          return pull();
+          if (pattern.includes(":block/children")) return pull();
+          const node = findNode(pull(), Array.isArray(id) ? id[1] : String(id));
+          const uid = node?.[":block/uid"];
+          return node && uid && foldStates.has(uid)
+            ? { ...node, ":block/open": foldStates.get(uid) }
+            : node;
         },
-      },
-      updateBlock: ({ block }): void => {
-        if (block.open) openedBlocks.push(block.uid);
+        block: {
+          update: async ({ block }): Promise<void> => {
+            if (!block?.uid || block.open === undefined) return;
+            foldStates.set(block.uid, block.open);
+            if (block.open) openedBlocks.push(block.uid);
+            else closedBlocks.push(block.uid);
+          },
+        },
       },
     } as unknown as Window["roamAlphaAPI"],
     openedBlocks,
+    closedBlocks,
     focusedBlocks,
     pullCalls,
   };
@@ -604,10 +626,12 @@ test("panel navigation previews folded matches and focuses only on request", asy
         {
           ":block/uid": "a",
           ":block/string": "Ancestor",
+          ":block/open": false,
           ":block/children": [
             {
               ":block/uid": "b",
               ":block/string": "Nested",
+              ":block/open": false,
               ":block/children": [
                 { ":block/uid": "match", ":block/string": "Target phrase" },
               ],
@@ -637,7 +661,7 @@ test("panel navigation previews folded matches and focuses only on request", asy
   await flushPromises();
 
   expect(controller.getState().currentMatchIndex).toBe(0);
-  expect(fakeApi.openedBlocks).toEqual(["a", "b", "a", "b"]);
+  expect(fakeApi.openedBlocks).toEqual(["a", "b"]);
   expect(fakeApi.focusedBlocks).toEqual(["match"]);
   expect(panel.focusCalls.at(-1)).toEqual({});
   expect(controller.getState().isOpen).toBe(true);
@@ -1486,6 +1510,7 @@ test("closing during ancestor expansion stops further block updates", async () =
         {
           ":block/uid": "parent",
           ":block/string": "Parent",
+          ":block/open": false,
           ":block/children": [
             {
               ":block/uid": "child",
@@ -1499,8 +1524,8 @@ test("closing during ancestor expansion stops further block updates", async () =
       ],
     }),
   });
-  fakeApi.api.updateBlock = ({ block }): Promise<void> => {
-    fakeApi.openedBlocks.push(block.uid);
+  fakeApi.api.data.block.update = ({ block }): Promise<void> => {
+    if (block?.uid) fakeApi.openedBlocks.push(block.uid);
     updatingAncestor.resolve();
     return resumeAncestor.promise;
   };
@@ -1751,24 +1776,6 @@ test("waitForBlockElement polls until a folded target renders", async () => {
   expect(waits).toBe(2);
 });
 
-test("revealAncestorBlocks continues after unsupported ancestors", async () => {
-  const fakeApi = createApi({ pull: () => null });
-  fakeApi.api.updateBlock = ({ block }): void => {
-    fakeApi.openedBlocks.push(block.uid);
-    if (block.uid === "unsupported") throw new Error("No open state");
-  };
-
-  await revealAncestorBlocks({
-    api: fakeApi.api,
-    ancestors: ["parent", "unsupported", "deep-parent"],
-  });
-  expect(fakeApi.openedBlocks).toEqual([
-    "parent",
-    "unsupported",
-    "deep-parent",
-  ]);
-});
-
 test("inline highlighting marks every occurrence and can be rebuilt", () => {
   const dom = new JSDOM(
     '<div id="block"><div class="rm-block__input--view">Alpha target and TARGET again</div></div>',
@@ -1874,6 +1881,7 @@ test("navigation waits for the actual folded outline block instead of an existin
           {
             ":block/uid": "parent",
             ":block/string": "Folded",
+            ":block/open": false,
             ":block/children": [
               { ":block/uid": "match", ":block/string": "target" },
             ],
@@ -1921,3 +1929,50 @@ test("navigation waits for the actual folded outline block instead of an existin
     dom.window.close();
   }
 });
+
+for (const exit of ["close", "unload", "query", "page", "edit"] as const) {
+  test(`temporary folds are restored on ${exit}, keeping an edited match visible`, async () => {
+    const panel = createPanelHost();
+    const element = new JSDOM("<div></div>").window.document.querySelector(
+      "div",
+    ) as HTMLElement;
+    const fakeApi = createApi({
+      pull: () => ({
+        ":block/uid": "root",
+        ":block/children": [
+          {
+            ":block/uid": "parent",
+            ":block/string": "Parent",
+            ":block/open": false,
+            ":block/children": [
+              { ":block/uid": "match", ":block/string": "Target" },
+            ],
+          },
+        ],
+      }),
+    });
+    const controller = await createFindInPage(
+      makeControllerDependencies({
+        api: fakeApi.api,
+        panelHost: panel.host,
+        getBlockElement: () => element,
+      }),
+    );
+    await controller.open();
+    panel.getActions().onQueryChange("target");
+    if (exit === "edit") panel.getActions().onFocusCurrent();
+    else panel.getActions().onNext();
+    await flushPromises();
+    expect(fakeApi.openedBlocks).toEqual(["parent"]);
+    if (exit === "close" || exit === "edit") panel.getActions().onClose();
+    if (exit === "unload") controller.unload();
+    if (exit === "query") panel.getActions().onQueryChange("different");
+    if (exit === "page") {
+      fakeApi.api.ui.mainWindow.getOpenPageOrBlockUid = () => "other-page";
+      await controller.open();
+    }
+    await flushPromises();
+    expect(fakeApi.closedBlocks).toEqual(exit === "edit" ? [] : ["parent"]);
+    controller.unload();
+  });
+}

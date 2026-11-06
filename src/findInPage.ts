@@ -4,6 +4,7 @@ import { render as renderToast } from "roamjs-components/components/Toast";
 import type { OnloadArgs, PullBlock } from "roamjs-components/types";
 
 import { FindInPagePanel } from "~/components/FindInPagePanel";
+import { createFoldedAncestorManager } from "~/utils/foldedAncestors";
 import {
   rankEntries,
   getMatchRanges,
@@ -713,25 +714,6 @@ export const waitForBlockElement = async ({
   return null;
 };
 
-export const revealAncestorBlocks = async ({
-  api,
-  ancestors,
-  signal,
-}: {
-  api: Window["roamAlphaAPI"];
-  ancestors: string[];
-  signal?: AbortSignal;
-}): Promise<void> => {
-  for (const uid of ancestors) {
-    if (signal?.aborted) return;
-    try {
-      await Promise.resolve(api.updateBlock({ block: { uid, open: true } }));
-    } catch {
-      // Pages and special block renderers may not expose an open state.
-    }
-  }
-};
-
 const observeDefaultContentChanges = (onChange: () => void): (() => void) => {
   const main = document.querySelector(".roam-body-main");
   if (!main) return () => undefined;
@@ -828,6 +810,10 @@ export const createFindInPage = async (
     });
   let api: Window["roamAlphaAPI"] | null =
     dependencies.roamApi ?? window.roamAlphaAPI;
+  const foldedAncestors = api
+    ? createFoldedAncestorManager({ api, afterHostRender })
+    : null;
+  let editingAncestors: string[] = [];
   let isInitialized = true;
   let isUnloaded = false;
   let navigationQueue = Promise.resolve();
@@ -889,6 +875,8 @@ export const createFindInPage = async (
     if (isUnloaded) return;
     cancelNavigation();
     stopObservingContent();
+    void foldedAncestors?.restore({ keepAncestors: editingAncestors });
+    editingAncestors = [];
     isOpen = false;
     clearHighlights();
     renderPanel();
@@ -902,7 +890,8 @@ export const createFindInPage = async (
     signal: AbortSignal;
   }): Promise<HTMLElement | null> => {
     if (!api || signal.aborted) return null;
-    await revealAncestorBlocks({ api, ancestors: match.ancestors, signal });
+    await foldedAncestors?.reveal({ ancestors: match.ancestors, signal });
+    if (signal.aborted) return null;
     const element = await waitForBlockElement({
       uid: match.uid,
       getBlockElement,
@@ -930,6 +919,7 @@ export const createFindInPage = async (
     match: RankedBlockSearchEntry;
     signal: AbortSignal;
   }): Promise<void> => {
+    editingAncestors = [];
     const element = await revealMatch({ match, signal });
     if (signal.aborted) return;
     panelHost.focusInput();
@@ -969,6 +959,7 @@ export const createFindInPage = async (
       }),
     );
     if (signal.aborted) return;
+    editingAncestors = match.ancestors;
     await scrollToSelection({ uid: match.uid, signal });
     if (signal.aborted) return;
     refreshHighlights();
@@ -1046,6 +1037,8 @@ export const createFindInPage = async (
     onQueryChange: (nextQuery): void => {
       if (!isOpen || isUnloaded) return;
       cancelNavigation();
+      void foldedAncestors?.restore();
+      editingAncestors = [];
       query = nextQuery;
       refreshSearch();
     },
@@ -1088,6 +1081,11 @@ export const createFindInPage = async (
         });
         return;
       }
+      if (rootUid !== previousRootUid) {
+        await foldedAncestors?.restore();
+        editingAncestors = [];
+        if (signal.aborted) return;
+      }
       ensureStyles();
       isOpen = true;
       renderPanel();
@@ -1119,6 +1117,7 @@ export const createFindInPage = async (
         );
       }
       panelHost.focusInput({ select: true });
+      editingAncestors = [];
       await afterHostRender();
       if (signal.aborted) return;
       refreshHighlights();
@@ -1173,6 +1172,8 @@ export const createFindInPage = async (
       stopObservingContent();
       isOpen = false;
       cancelNavigation();
+      void foldedAncestors?.restore({ keepAncestors: editingAncestors });
+      editingAncestors = [];
       clearHighlights();
       panelHost.unmount();
       removeStyles();

@@ -62,7 +62,7 @@ The navigation commands use the current search while its panel is open. If **Cmd
 - The counter and navigation track individual, non-overlapping occurrences. Before navigating, the counter shows the total; afterward, it shows a position such as **3 of 4**.
 - Search uses saved block text. Matches in hidden markup, such as link destinations, can be selected for editing even when they have no visible inline highlight.
 - After changing block text or navigating to another page, run **Find In Page: Open** to refresh the search.
-- Folded ancestors opened during navigation remain expanded when you close the panel.
+- Folded ancestors opened during navigation fold back when you leave that branch or close the panel. Shared ancestors stay open between matches in the same branch. Originally expanded blocks and manual fold changes are preserved. Selecting a match for editing keeps its ancestors open when you close search.
 - On large result sets, inline highlighting covers the first 250 matching blocks plus the selected block. Every occurrence remains navigable.
 
 An empty query shows **Type to search**. A query with no results shows **No matches**. If search reports that no page is open, open an individual page or zoom into a block rather than using the Daily Notes feed.
