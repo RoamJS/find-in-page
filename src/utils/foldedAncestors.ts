@@ -74,6 +74,25 @@ export const createFoldedAncestorManager = ({
     return queue;
   };
 
+  const waitForHostRender = async ({
+    signal,
+  }: {
+    signal?: AbortSignal;
+  }): Promise<void> => {
+    if (signal?.aborted) return;
+    if (!signal) return afterHostRender();
+    let cancelWait = (): void => undefined;
+    const cancelled = new Promise<void>((resolve) => {
+      cancelWait = resolve;
+      signal.addEventListener("abort", cancelWait, { once: true });
+    });
+    try {
+      await Promise.race([afterHostRender(), cancelled]);
+    } finally {
+      signal.removeEventListener("abort", cancelWait);
+    }
+  };
+
   return {
     reveal: ({ ancestors, signal }): Promise<void> =>
       enqueue(async () => {
@@ -90,7 +109,7 @@ export const createFoldedAncestorManager = ({
             remember(uid);
             await api.data.block.update({ block: { uid, open: true } });
             // Roam must mount a parent before updating a folded child inside it.
-            await afterHostRender();
+            await waitForHostRender({ signal });
           } catch {
             forget(uid);
             // Pages and special block renderers may not expose an open state.

@@ -189,3 +189,47 @@ test("unsupported ancestors and a failed opening write do not stop later ancesto
   ]);
   expect(f.watches.size).toBe(0);
 });
+
+for (const nextAction of ["restore", "reveal"] as const) {
+  test(`cancelled rendering does not block ${nextAction}`, async () => {
+    test.setTimeout(2000);
+    const f = createFixture({ a: false, b: false });
+    let resumeRender!: () => void;
+    const rendering = new Promise<void>((resolve) => {
+      resumeRender = resolve;
+    });
+    let renderStarted!: () => void;
+    const starting = new Promise<void>((resolve) => {
+      renderStarted = resolve;
+    });
+    let renderCount = 0;
+    const folds = createFoldedAncestorManager({
+      api: f.api,
+      afterHostRender: async (): Promise<void> => {
+        renderCount += 1;
+        if (renderCount > 1) return;
+        renderStarted();
+        await rendering;
+      },
+    });
+    const controller = new AbortController();
+    const original = folds.reveal({
+      ancestors: ["a"],
+      signal: controller.signal,
+    });
+    await starting;
+    controller.abort();
+    if (nextAction === "restore") await folds.restore();
+    else await folds.reveal({ ancestors: ["b"] });
+    expect(Object.fromEntries(f.states)).toEqual({
+      a: false,
+      b: nextAction === "reveal",
+    });
+    const writesBeforeOldRender = [...f.writes];
+    resumeRender();
+    await original;
+    expect(f.writes).toEqual(writesBeforeOldRender);
+    await folds.restore();
+    expect(f.watches.size).toBe(0);
+  });
+}
