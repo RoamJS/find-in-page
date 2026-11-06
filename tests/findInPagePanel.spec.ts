@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { JSDOM } from "jsdom";
 import React from "react";
 
 import {
@@ -307,3 +308,68 @@ test("focus control identifies and focuses the selected occurrence", () => {
   expect(button?.props.disabled).toBe(false);
   expect(button?.props.onClick).toBe(actions.onFocusCurrent);
 });
+
+for (const direction of ["Previous", "Next"] as const) {
+  for (const scenario of [
+    {
+      name: "preserves query focus on a primary mouse click",
+      focusInput: true,
+      button: 0,
+      preventDefault: true,
+    },
+    {
+      name: "allows normal mouse focus when the query is not focused",
+      focusInput: false,
+      button: 0,
+      preventDefault: false,
+    },
+    {
+      name: "leaves secondary mouse clicks alone",
+      focusInput: true,
+      button: 2,
+      preventDefault: false,
+    },
+  ]) {
+    test(`${direction} ${scenario.name}`, () => {
+      const dom = new JSDOM('<input id="query" /><input id="other" />');
+      const input = dom.window.document.getElementById(
+        "query",
+      ) as HTMLInputElement;
+      const other = dom.window.document.getElementById(
+        "other",
+      ) as HTMLInputElement;
+      (scenario.focusInput ? input : other).focus();
+      const actions = createKeyboardActions();
+      const panel = FindInPagePanel({
+        inputRef: { current: input },
+        query: "target",
+        currentMatch: 0,
+        matchCount: 2,
+        onQueryChange: (): void => undefined,
+        ...actions,
+      });
+      const button = getElementChildren(panel)
+        .filter(isElementNode)
+        .find(
+          (element) => element.props["aria-label"] === `${direction} match`,
+        );
+      const onMouseDown = button?.props.onMouseDown as (event: {
+        button: number;
+        preventDefault: () => void;
+      }) => void;
+      let prevented = false;
+      onMouseDown({
+        button: scenario.button,
+        preventDefault: (): void => {
+          prevented = true;
+        },
+      });
+      expect(prevented).toBe(scenario.preventDefault);
+      expect(actions.calls).toEqual([]);
+      const onClick = button?.props.onClick as () => void;
+      onClick();
+      expect(actions.calls).toEqual([direction.toLowerCase()]);
+      dom.window.close();
+    });
+  }
+}
