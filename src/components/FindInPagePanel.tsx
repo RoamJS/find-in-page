@@ -1,5 +1,9 @@
 import { Button, Card, Icon, InputGroup, Tooltip } from "@blueprintjs/core";
-import React, { type KeyboardEvent, type RefObject } from "react";
+import React, {
+  type KeyboardEvent,
+  type MouseEvent,
+  type RefObject,
+} from "react";
 
 export type FindInPagePanelProps = {
   inputRef: RefObject<HTMLInputElement>;
@@ -131,6 +135,13 @@ export const FindInPagePanel = ({
       onClose,
     });
 
+  const preserveInputFocus = (event: MouseEvent<HTMLButtonElement>): void => {
+    const input = inputRef.current;
+    if (event.button === 0 && input?.ownerDocument.activeElement === input) {
+      event.preventDefault();
+    }
+  };
+
   const hasMatches = matchCount > 0;
   const hasSelectedMatch =
     hasMatches && currentMatch >= 0 && currentMatch < matchCount;
@@ -182,6 +193,7 @@ export const FindInPagePanel = ({
         disabled={!hasMatches}
         aria-label="Previous match"
         title="Previous match (Shift+Enter or ArrowUp)"
+        onMouseDown={preserveInputFocus}
         onClick={onPrevious}
       />
       <Button
@@ -190,6 +202,7 @@ export const FindInPagePanel = ({
         disabled={!hasMatches}
         aria-label="Next match"
         title="Next match (Enter or ArrowDown)"
+        onMouseDown={preserveInputFocus}
         onClick={onNext}
       />
       <Tooltip content={FOCUS_HINT}>

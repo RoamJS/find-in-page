@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Keep the search field focused when clicking Previous or Next to avoid a flashing focus border.
 - Refold parents opened by search when moving to another branch or closing the panel, while keeping an edited match visible.
 - Restore the selected occurrence’s highlight after returning from editing through Find In Page: Open.
 
