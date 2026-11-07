@@ -610,6 +610,26 @@ const getBlockEditor = (element: HTMLElement): HTMLTextAreaElement | null => {
   );
 };
 
+const getSelectedSearchText = (): string => {
+  if (typeof document === "undefined") return "";
+  const { activeElement } = document;
+  const panelRoot = document.getElementById(PANEL_ROOT_ID);
+  if (panelRoot?.contains(activeElement)) return "";
+
+  const editor = activeElement?.matches(".roam-block-container textarea")
+    ? (activeElement as HTMLTextAreaElement)
+    : null;
+  const selection = document.getSelection();
+  const text = editor
+    ? editor.value.slice(editor.selectionStart, editor.selectionEnd)
+    : selection?.anchorNode &&
+        !panelRoot?.contains(selection.anchorNode) &&
+        !panelRoot?.contains(selection.focusNode)
+      ? selection.toString()
+      : "";
+  return text.replace(/[\r\n]+/g, " ").trim();
+};
+
 const scrollEditorSelectionIntoView = (editor: HTMLTextAreaElement): void => {
   const mirror = document.createElement("div");
   const style = getComputedStyle(editor);
@@ -1057,6 +1077,8 @@ export const createFindInPage = async (
 
   const open = async (): Promise<void> => {
     if (!api || isUnloaded) return;
+    const selectedText = getSelectedSearchText();
+    const queryChanged = Boolean(selectedText && selectedText !== query);
     const previousRootUid = indexedRootUid;
     const selectedMatch = matches[currentMatchIndex];
     cancelNavigation();
@@ -1075,7 +1097,7 @@ export const createFindInPage = async (
         });
         return;
       }
-      if (rootUid !== previousRootUid) {
+      if (rootUid !== previousRootUid || queryChanged) {
         await foldedAncestors?.restore();
         editingAncestors = [];
         if (signal.aborted) return;
@@ -1085,8 +1107,12 @@ export const createFindInPage = async (
       renderPanel();
       await rebuildIndex({ rootUid });
       if (signal.aborted) return;
+      if (queryChanged) query = selectedText;
       refreshSearch({
-        selectedMatch: rootUid === previousRootUid ? selectedMatch : undefined,
+        selectedMatch:
+          rootUid === previousRootUid && !queryChanged
+            ? selectedMatch
+            : undefined,
       });
       stopObservingContent();
       stopObservingContent = (

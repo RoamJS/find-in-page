@@ -301,6 +301,88 @@ test("opening always rebuilds the index and reflects edits and deletes", async (
   expect(controller.getState().matches.map(({ uid }) => uid)).toEqual(["two"]);
 });
 
+for (const source of ["rendered block", "block editor"] as const) {
+  test(`Open searches selected text in a ${source} and retains it with no selection`, async () => {
+    const dom = new JSDOM(`
+      <div class="roam-block-container">
+        <span id="rendered">Before  selected phrase  after</span>
+        <textarea>Before  selected phrase  after</textarea>
+      </div>
+      <div id="roamjs-find-in-page-root"><input value="selected phrase"></div>
+    `);
+    const { document } = dom.window;
+    const previousDocument = global.document;
+    global.document = document;
+    try {
+      const panel = createPanelHost();
+      const extension = createExtensionApi();
+      const fakeApi = createApi({
+        pull: () => ({
+          ":block/uid": "root",
+          ":block/children": [
+            { ":block/uid": "old", ":block/string": "Previous query" },
+            { ":block/uid": "new", ":block/string": "The selected phrase" },
+          ],
+        }),
+      });
+      const controller = await createFindInPage(
+        makeControllerDependencies({
+          api: fakeApi.api,
+          extensionAPI: extension.api,
+          panelHost: panel.host,
+        }),
+      );
+      const openCommand = extension.addedCommands[0].callback;
+      await controller.open();
+      panel.getActions().onQueryChange("Previous query");
+      panel.getActions().onClose();
+
+      const editor = document.querySelector("textarea")!;
+      const selection = document.getSelection()!;
+      if (source === "block editor") {
+        editor.focus();
+        editor.setSelectionRange(6, 25);
+      } else {
+        const text = document.querySelector("#rendered")!.firstChild!;
+        selection.setBaseAndExtent(text, 6, text, 25);
+      }
+      openCommand();
+      await flushPromises();
+
+      expect(panel.renders.at(-1)).toMatchObject({
+        query: "selected phrase",
+        matchCount: 1,
+        currentMatch: -1,
+      });
+      expect(controller.getState().matches.map(({ uid }) => uid)).toEqual([
+        "new",
+      ]);
+      expect(panel.focusCalls.at(-1)).toEqual({ select: true });
+
+      selection.removeAllRanges();
+      editor.focus();
+      editor.setSelectionRange(6, 8);
+      await controller.open();
+      expect(controller.getState().query).toBe("selected phrase");
+
+      editor.setSelectionRange(8, 8);
+      panel.getActions().onClose();
+      await controller.open();
+      expect(controller.getState().query).toBe("selected phrase");
+
+      const queryInput = document.querySelector("input")!;
+      queryInput.focus();
+      queryInput.setSelectionRange(0, 8);
+      await controller.open();
+      expect(controller.getState().query).toBe("selected phrase");
+      controller.unload();
+    } finally {
+      global.document = previousDocument;
+      dom.window.close();
+    }
+  });
+}
+
 for (const outcome of ["render", "close", "unload", "query"] as const) {
   test(`Open repaints the retained occurrence after the editor blurs: ${outcome}`, async () => {
     const panel = createPanelHost();
