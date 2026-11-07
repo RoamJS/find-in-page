@@ -627,7 +627,7 @@ const getSelectedSearchText = (): string => {
         !panelRoot?.contains(selection.focusNode)
       ? selection.toString()
       : "";
-  return text.replace(/[\r\n]+/g, " ").trim();
+  return text.trim();
 };
 
 const scrollEditorSelectionIntoView = (editor: HTMLTextAreaElement): void => {
@@ -836,7 +836,8 @@ export const createFindInPage = async (
     panelHost.render(
       {
         isOpen,
-        query,
+        // The input is single-line, but matching uses the original line breaks.
+        query: query.replace(/[\r\n]+/g, " "),
         currentMatch: currentMatchIndex,
         matchCount: matches.length,
       },
