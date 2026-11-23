@@ -6,7 +6,7 @@
 
 **Find text across the current page, including folded blocks. Preview highlighted matches, jump into editing, and navigate with keyboard shortcuts.**
 
-[![RoamJS](https://roamjs.com/badges/website.svg)](https://roamjs.com/) [![DeepWiki](https://roamjs.com/badges/deepwiki.svg)](https://deepwiki.com/RoamJS/find-in-page) [![Slack](https://roamjs.com/badges/slack.svg)](https://roamresearch.slack.com/archives/C016N2B66JU)
+[![RoamJS](https://roamjs.com/badges/website.svg)](https://roamjs.com/) [![DeepWiki](https://roamjs.com/badges/deepwiki.svg)](https://deepwiki.com/RoamJS/find-in-page) [![#roam-js on Slack](https://roamjs.com/badges/slack.svg)](https://roamresearch.slack.com/archives/C016N2B66JU)
 
 https://github.com/user-attachments/assets/b34d12c6-c8b0-452e-b62e-973ce693fee4
 
